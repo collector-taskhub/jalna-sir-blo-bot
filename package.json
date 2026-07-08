@@ -1,0 +1,7 @@
+{
+  "name": "jalna-sir-blo-bot",
+  "version": "1.0.0",
+  "dependencies": {
+    "googleapis": "^140.0.0"
+  }
+}
