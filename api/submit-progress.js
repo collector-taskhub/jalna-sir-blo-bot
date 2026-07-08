@@ -19,7 +19,8 @@ module.exports = async (req, res) => {
     spreadsheetId: sheetId, range: 'BLO_Master!A2:P2000',
   });
   const master = masterResp.data.values || [];
-  const row = master.find(r => String(r[7]) === String(phone));
+  const cleanPhone = String(phone).replace(/\D/g, '').slice(-10);
+  const row = master.find(r => String(r[7]).replace(/\D/g, '').slice(-10) === cleanPhone);
   if (!row) return res.status(404).json({ status: 'error', msg: 'BLO not found' });
 
   const bloId = row[0], totalElectors = Number(row[10]);
