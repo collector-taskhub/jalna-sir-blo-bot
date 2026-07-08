@@ -1,0 +1,21 @@
+name: Morning Voice Broadcast
+on:
+  schedule:
+    - cron: '30 3 * * *'   # 03:30 UTC = 09:00 IST, every day
+  workflow_dispatch: {}
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests google-auth google-api-python-client
+      - run: python scripts/send_morning_voices.py
+        env:
+          SENDPULSE_CLIENT_ID: ${{ secrets.SENDPULSE_CLIENT_ID }}
+          SENDPULSE_CLIENT_SECRET: ${{ secrets.SENDPULSE_CLIENT_SECRET }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
