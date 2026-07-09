@@ -12,6 +12,13 @@ async function getSheetsClient() {
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).end();
   const { phone, ef_distributed, ef_collected, ef_digitised } = req.body;
+
+  // Reject negative, decimal, or non-numeric values — treat as invalid input rather than silently accepting bad data.
+  const nums = [ef_distributed, ef_collected, ef_digitised].map(Number);
+  if (nums.some(n => !Number.isFinite(n) || n < 0 || !Number.isInteger(n))) {
+    return res.status(400).json({ status: 'error', msg: 'Invalid number: must be a non-negative whole number' });
+  }
+
   const sheets = await getSheetsClient();
   const sheetId = process.env.GOOGLE_SHEET_ID;
 
