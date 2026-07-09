@@ -34,6 +34,7 @@
 <body>
   <h1 id="pageTitle">Jalna SIR — District Dashboard</h1>
   <div class="subtitle" id="pageSubtitle">Loading...</div>
+<select id="acDropdown" class="search" style="margin-bottom:16px;"></select>
 
   <div class="cards" id="cards"></div>
   <div class="chart-wrap"><canvas id="acChart" height="90"></canvas></div>
@@ -55,8 +56,7 @@
 <script>
 const API_URL = "https://jalna-sir-blo-bot.vercel.app/api/dashboard-data";
 const params = new URLSearchParams(window.location.search);
-const acFilter = params.get('ac'); // e.g. "99" or "99,100" or null for district view
-
+let acFilter = params.get('ac'); // e.g. "99" or "99,100" or null for district view
 let allBlos = [];
 
 function pctBadge(pct) {
@@ -66,6 +66,7 @@ function pctBadge(pct) {
 
 function render(data) {
   const acList = acFilter ? acFilter.split(',').map(Number) : null;
+ setupDropdown(data.acSummary);
   const acSummary = acList ? data.acSummary.filter(a => acList.includes(a.acNo)) : data.acSummary;
   allBlos = acList ? data.blos.filter(b => acList.includes(b.acNo)) : data.blos;
 
@@ -132,6 +133,20 @@ async function load() {
 }
 
 load();
+ function setupDropdown(acSummaryAll) {
+  const dd = document.getElementById('acDropdown');
+  dd.innerHTML = '<option value="">All Assembly Constituencies (District)</option>' +
+    acSummaryAll.map(a => `<option value="${a.acNo}">${a.acName}</option>`).join('');
+  dd.value = acFilter || '';
+  dd.addEventListener('change', () => {
+    const val = dd.value;
+    const url = new URL(window.location);
+    if (val) { url.searchParams.set('ac', val); } else { url.searchParams.delete('ac'); }
+    window.history.replaceState({}, '', url);
+    acFilter = val || null;
+    load();
+  });
+}
 setInterval(load, 5 * 60 * 1000); // auto-refresh every 5 minutes
 </script>
 </body>
