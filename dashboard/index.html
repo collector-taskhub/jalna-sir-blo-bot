@@ -3,72 +3,116 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jalna SIR Dashboard</title>
+<title> District Jalna Special Intensive Revision (SIR) Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #f4f6f8; color: #1a1a2e; padding: 20px; }
-  h1 { font-size: 22px; margin-bottom: 4px; }
-  .subtitle { color: #666; font-size: 13px; margin-bottom: 20px; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
-  .card { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  .card .label { font-size: 12px; color: #777; text-transform: uppercase; letter-spacing: 0.03em; }
-  .card .value { font-size: 26px; font-weight: 700; margin-top: 4px; }
-  .card.green .value { color: #1a7f37; }
-  .card.orange .value { color: #d97706; }
-  .chart-wrap { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #f0f2f8; color: #1a1a2e; }
+  .header { background: linear-gradient(120deg, #4f46e5, #7c3aed, #db2777); padding: 28px 24px; color: #fff; }
+  .header h1 { font-size: 24px; font-weight: 800; }
+  .header .subtitle { opacity: 0.9; font-size: 13px; margin-top: 4px; }
+  .content { padding: 20px; max-width: 1400px; margin: 0 auto; }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+  select, .search { padding: 9px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; background: #fff; }
+  .btn { padding: 9px 16px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; color: #fff; }
+  .btn.excel { background: #15803d; }
+  .btn.pdf { background: #b91c1c; }
+  .btn:hover { opacity: 0.9; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .card { border-radius: 14px; padding: 18px; color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,0.12); }
+  .card.c1 { background: linear-gradient(135deg, #2563eb, #1e40af); }
+  .card.c2 { background: linear-gradient(135deg, #16a34a, #15803d); }
+  .card.c3 { background: linear-gradient(135deg, #f59e0b, #d97706); }
+  .card.c4 { background: linear-gradient(135deg, #7c3aed, #5b21b6); }
+  .card .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.85; }
+  .card .value { font-size: 28px; font-weight: 800; margin-top: 6px; }
+  .chart-wrap { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+  .chart-wrap h3 { font-size: 14px; margin-bottom: 12px; color: #444; }
+  table { width: 100%; border-collapse: collapse; background: #fff; }
   th, td { text-align: left; padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #eee; }
-  th { background: #f0f2f5; font-weight: 600; position: sticky; top: 0; }
-  tr:hover { background: #fafbfc; }
-  .badge { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  th { background: #eef1fb; font-weight: 700; position: sticky; top: 0; color: #333; }
+  tr:hover { background: #f7f8ff; }
+  .badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
   .badge.high { background: #dcfce7; color: #15803d; }
   .badge.mid { background: #fef9c3; color: #a16207; }
   .badge.low { background: #fee2e2; color: #b91c1c; }
-  .search { margin-bottom: 12px; width: 100%; max-width: 320px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-  .updated { color: #999; font-size: 12px; margin-top: 20px; text-align: center; }
-  .table-wrap { max-height: 500px; overflow-y: auto; border-radius: 10px; }
-  .loading { text-align: center; padding: 40px; color: #999; }
+  .table-card { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+  .table-wrap { max-height: 520px; overflow-y: auto; }
+  .updated { color: #888; font-size: 12px; margin-top: 16px; text-align: center; }
+  @media print {
+    .toolbar, select#acDropdown, .header { display: none !important; }
+    .table-wrap { max-height: none !important; overflow: visible !important; }
+    body { background: #fff; }
+  }
 </style>
 </head>
 <body>
-  <h1 id="pageTitle">Jalna SIR — District Dashboard</h1>
-  <div class="subtitle" id="pageSubtitle">Loading...</div>
-<select id="acDropdown" class="search" style="margin-bottom:16px;"></select>
-
-  <div class="cards" id="cards"></div>
-  <div class="chart-wrap"><canvas id="acChart" height="90"></canvas></div>
-
-  <input type="text" class="search" id="searchBox" placeholder="Search BLO name or booth...">
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>BLO ID</th><th>Name</th><th>AC</th><th>Booth</th>
-          <th>Electors</th><th>Digitised</th><th>%</th><th>Today</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
+  <div class="header">
+    <h1 id="pageTitle">District Jalna Special Intensive Revision (SIR) Dashboard</h1>
+    <div class="subtitle" id="pageSubtitle">Loading...</div>
   </div>
-  <div class="updated" id="updated"></div>
+
+  <div class="content">
+    <div class="toolbar">
+      <select id="acDropdown"></select>
+      <input type="text" class="search" id="searchBox" placeholder="Search BLO name or booth...">
+      <button class="btn excel" id="exportExcel">⬇ Export Excel</button>
+      <button class="btn pdf" id="exportPdf">🖨 Export PDF</button>
+    </div>
+
+    <div class="cards" id="cards"></div>
+    <div class="chart-wrap"><h3>Completion % by Assembly Constituency</h3><canvas id="acChart" height="90"></canvas></div>
+
+    <div class="table-card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>BLO ID</th><th>Name</th><th>AC</th><th>Booth</th>
+              <th>Electors</th><th>Digitised</th><th>%</th><th>Today</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="updated" id="updated"></div>
+  </div>
 
 <script>
 const API_URL = "https://jalna-sir-blo-bot.vercel.app/api/dashboard-data";
 const params = new URLSearchParams(window.location.search);
-let acFilter = params.get('ac'); // e.g. "99" or "99,100" or null for district view
+let acFilter = params.get('ac');
+
 let allBlos = [];
+const AC_COLORS = ['#2563eb', '#16a34a', '#f59e0b', '#db2777', '#7c3aed'];
 
 function pctBadge(pct) {
   const cls = pct >= 90 ? 'high' : pct >= 50 ? 'mid' : 'low';
   return `<span class="badge ${cls}">${pct}%</span>`;
 }
 
+function setupDropdown(acSummaryAll) {
+  const dd = document.getElementById('acDropdown');
+  dd.innerHTML = '<option value="">All Assembly Constituencies (District)</option>' +
+    acSummaryAll.map(a => `<option value="${a.acNo}">${a.acName}</option>`).join('');
+  dd.value = acFilter || '';
+  dd.onchange = () => {
+    const val = dd.value;
+    const url = new URL(window.location);
+    if (val) { url.searchParams.set('ac', val); } else { url.searchParams.delete('ac'); }
+    window.history.replaceState({}, '', url);
+    acFilter = val || null;
+    load();
+  };
+}
+
 function render(data) {
   const acList = acFilter ? acFilter.split(',').map(Number) : null;
- setupDropdown(data.acSummary);
   const acSummary = acList ? data.acSummary.filter(a => acList.includes(a.acNo)) : data.acSummary;
   allBlos = acList ? data.blos.filter(b => acList.includes(b.acNo)) : data.blos;
+  setupDropdown(data.acSummary);
 
   const scope = acList
     ? { totalBlos: acSummary.reduce((s,a)=>s+a.totalBlos,0), totalElectors: acSummary.reduce((s,a)=>s+a.totalElectors,0),
@@ -83,10 +127,10 @@ function render(data) {
   document.getElementById('pageSubtitle').textContent = `${scope.totalBlos} BLOs tracked`;
 
   document.getElementById('cards').innerHTML = `
-    <div class="card"><div class="label">Overall Completion</div><div class="value">${scope.overallPct}%</div></div>
-    <div class="card green"><div class="label">Above 90%</div><div class="value">${scope.above90Count}</div></div>
-    <div class="card orange"><div class="label">Submitted Today</div><div class="value">${scope.submittedTodayCount} / ${scope.totalBlos}</div></div>
-    <div class="card"><div class="label">Total Electors</div><div class="value">${scope.totalElectors.toLocaleString()}</div></div>
+    <div class="card c1"><div class="label">Overall Completion</div><div class="value">${scope.overallPct}%</div></div>
+    <div class="card c2"><div class="label">Above 90%</div><div class="value">${scope.above90Count}</div></div>
+    <div class="card c3"><div class="label">Submitted Today</div><div class="value">${scope.submittedTodayCount} / ${scope.totalBlos}</div></div>
+    <div class="card c4"><div class="label">Total Electors</div><div class="value">${scope.totalElectors.toLocaleString()}</div></div>
   `;
 
   const ctx = document.getElementById('acChart');
@@ -95,7 +139,8 @@ function render(data) {
     type: 'bar',
     data: {
       labels: acSummary.map(a => a.acName),
-      datasets: [{ label: 'Completion %', data: acSummary.map(a => a.overallPct), backgroundColor: '#2563eb', borderRadius: 6 }]
+      datasets: [{ label: 'Completion %', data: acSummary.map(a => a.overallPct),
+        backgroundColor: acSummary.map((_, i) => AC_COLORS[i % AC_COLORS.length]), borderRadius: 8 }]
     },
     options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
   });
@@ -122,32 +167,35 @@ document.getElementById('searchBox').addEventListener('input', e => {
   renderTable(allBlos.filter(b => b.bloName.toLowerCase().includes(q) || String(b.boothNo).includes(q)));
 });
 
+document.getElementById('exportExcel').addEventListener('click', () => {
+  const rows = allBlos.map(b => ({
+    'BLO ID': b.bloId, 'Name': b.bloName, 'AC': b.acName, 'Booth No': b.boothNo,
+    'Electors': b.totalElectors, 'Digitised': b.cumulative, 'Completion %': b.overallPct,
+    'Above 90%': b.above90 ? 'Yes' : 'No', 'Submitted Today': b.submittedToday ? 'Yes' : 'No',
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'SIR Progress');
+  const dateStr = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `Jalna_SIR_Report_${dateStr}.xlsx`);
+});
+
+document.getElementById('exportPdf').addEventListener('click', () => {
+  window.print();
+});
+
 async function load() {
   try {
     const res = await fetch(API_URL);
     const data = await res.json();
     render(data);
   } catch (e) {
-    document.getElementById('cards').innerHTML = '<div class="loading">Could not load data. Check connection and try refreshing.</div>';
+    document.getElementById('cards').innerHTML = '<div style="padding:40px;text-align:center;color:#999;">Could not load data. Check connection and try refreshing.</div>';
   }
 }
 
 load();
- function setupDropdown(acSummaryAll) {
-  const dd = document.getElementById('acDropdown');
-  dd.innerHTML = '<option value="">All Assembly Constituencies (District)</option>' +
-    acSummaryAll.map(a => `<option value="${a.acNo}">${a.acName}</option>`).join('');
-  dd.value = acFilter || '';
-  dd.addEventListener('change', () => {
-    const val = dd.value;
-    const url = new URL(window.location);
-    if (val) { url.searchParams.set('ac', val); } else { url.searchParams.delete('ac'); }
-    window.history.replaceState({}, '', url);
-    acFilter = val || null;
-    load();
-  });
-}
-setInterval(load, 5 * 60 * 1000); // auto-refresh every 5 minutes
+setInterval(load, 5 * 60 * 1000);
 </script>
 </body>
 </html>
