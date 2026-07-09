@@ -39,6 +39,9 @@ module.exports = async (req, res) => {
   const overallPct = totalElectors > 0 ? newCumulative / totalElectors : 0;
   const above90 = overallPct >= 0.9;
 
+  // Cap only the value shown to the BLO — the raw overallPct is still logged below for admin review.
+  const displayPct = Math.min(overallPct, 1);
+
   await sheets.spreadsheets.values.append({
     spreadsheetId: sheetId, range: 'Daily_Progress_Log!A1',
     valueInputOption: 'USER_ENTERED',
@@ -51,7 +54,7 @@ module.exports = async (req, res) => {
 
   return res.status(200).json({
     status: 'ok',
-    overall_pct: Math.round(overallPct * 1000) / 10,
+    overall_pct: Math.round(displayPct * 1000) / 10,
     above_90: above90,
   });
 };
