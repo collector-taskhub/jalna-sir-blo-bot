@@ -7,6 +7,7 @@ GITHUB_USERNAME = "collector-taskhub"
 REPO_NAME = "jalna-sir-blo-bot"
 
 # Single shared audio file — no more per-BLO name splicing.
+BOT_ID = "6a4ce87c03bc483036044d21"
 MORNING_AUDIO_URL = f'https://raw.githubusercontent.com/{GITHUB_USERNAME}/{REPO_NAME}/main/audio/morning_message.ogg'
 
 # For the first safe test, only send to these BLO_IDs.
@@ -49,6 +50,7 @@ def main():
             'https://api.sendpulse.com/whatsapp/contacts/sendByPhone',
             headers={'Authorization': f'Bearer {token}'},
             json={
+                'bot_id': BOT_ID,
                 'phone': full_phone,
                 'message': {'type': 'audio', 'audio': {'link': MORNING_AUDIO_URL}},
             },
