@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
   }
 
   const blos = master.map(row => {
-    const bloId = row[0], acNo = row[1], acName = row[2], boothNo = row[3],
+    const bloId = row[0], acNo = Number(row[1]), acName = row[2], boothNo = row[3],
       boothName = row[5], bloName = row[6], totalElectors = Number(row[10]),
       digitisedBaseline = Number(row[12]);
     const latest = latestByBlo[bloId];
