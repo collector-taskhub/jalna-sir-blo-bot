@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jalna SIR Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #f4f6f8; color: #1a1a2e; padding: 20px; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 20px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .card { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .card .label { font-size: 12px; color: #777; text-transform: uppercase; letter-spacing: 0.03em; }
+  .card .value { font-size: 26px; font-weight: 700; margin-top: 4px; }
+  .card.green .value { color: #1a7f37; }
+  .card.orange .value { color: #d97706; }
+  .chart-wrap { background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  th, td { text-align: left; padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #eee; }
+  th { background: #f0f2f5; font-weight: 600; position: sticky; top: 0; }
+  tr:hover { background: #fafbfc; }
+  .badge { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge.high { background: #dcfce7; color: #15803d; }
+  .badge.mid { background: #fef9c3; color: #a16207; }
+  .badge.low { background: #fee2e2; color: #b91c1c; }
+  .search { margin-bottom: 12px; width: 100%; max-width: 320px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+  .updated { color: #999; font-size: 12px; margin-top: 20px; text-align: center; }
+  .table-wrap { max-height: 500px; overflow-y: auto; border-radius: 10px; }
+  .loading { text-align: center; padding: 40px; color: #999; }
+</style>
+</head>
+<body>
+  <h1 id="pageTitle">Jalna SIR — District Dashboard</h1>
+  <div class="subtitle" id="pageSubtitle">Loading...</div>
+
+  <div class="cards" id="cards"></div>
+  <div class="chart-wrap"><canvas id="acChart" height="90"></canvas></div>
+
+  <input type="text" class="search" id="searchBox" placeholder="Search BLO name or booth...">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>BLO ID</th><th>Name</th><th>AC</th><th>Booth</th>
+          <th>Electors</th><th>Digitised</th><th>%</th><th>Today</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+  <div class="updated" id="updated"></div>
+
+<script>
+const API_URL = "https://jalna-sir-blo-bot.vercel.app/api/dashboard-data";
+const params = new URLSearchParams(window.location.search);
+const acFilter = params.get('ac'); // e.g. "99" or "99,100" or null for district view
+
+let allBlos = [];
+
+function pctBadge(pct) {
+  const cls = pct >= 90 ? 'high' : pct >= 50 ? 'mid' : 'low';
+  return `<span class="badge ${cls}">${pct}%</span>`;
+}
+
+function render(data) {
+  const acList = acFilter ? acFilter.split(',').map(Number) : null;
+  const acSummary = acList ? data.acSummary.filter(a => acList.includes(a.acNo)) : data.acSummary;
+  allBlos = acList ? data.blos.filter(b => acList.includes(b.acNo)) : data.blos;
+
+  const scope = acList
+    ? { totalBlos: acSummary.reduce((s,a)=>s+a.totalBlos,0), totalElectors: acSummary.reduce((s,a)=>s+a.totalElectors,0),
+        totalCumulative: acSummary.reduce((s,a)=>s+a.totalCumulative,0), above90Count: acSummary.reduce((s,a)=>s+a.above90Count,0),
+        submittedTodayCount: acSummary.reduce((s,a)=>s+a.submittedTodayCount,0) }
+    : data.district;
+  scope.overallPct = scope.totalElectors > 0 ? Math.round((scope.totalCumulative/scope.totalElectors)*1000)/10 : 0;
+
+  document.getElementById('pageTitle').textContent = acList
+    ? `Jalna SIR — ${acSummary.map(a=>a.acName).join(', ')}`
+    : 'Jalna SIR — District Dashboard';
+  document.getElementById('pageSubtitle').textContent = `${scope.totalBlos} BLOs tracked`;
+
+  document.getElementById('cards').innerHTML = `
+    <div class="card"><div class="label">Overall Completion</div><div class="value">${scope.overallPct}%</div></div>
+    <div class="card green"><div class="label">Above 90%</div><div class="value">${scope.above90Count}</div></div>
+    <div class="card orange"><div class="label">Submitted Today</div><div class="value">${scope.submittedTodayCount} / ${scope.totalBlos}</div></div>
+    <div class="card"><div class="label">Total Electors</div><div class="value">${scope.totalElectors.toLocaleString()}</div></div>
+  `;
+
+  const ctx = document.getElementById('acChart');
+  if (window._chart) window._chart.destroy();
+  window._chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: acSummary.map(a => a.acName),
+      datasets: [{ label: 'Completion %', data: acSummary.map(a => a.overallPct), backgroundColor: '#2563eb', borderRadius: 6 }]
+    },
+    options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
+  });
+
+  renderTable(allBlos);
+  document.getElementById('updated').textContent = 'Last updated: ' + new Date().toLocaleString('en-IN');
+}
+
+function renderTable(blos) {
+  document.getElementById('tableBody').innerHTML = blos
+    .sort((a,b) => b.overallPct - a.overallPct)
+    .map(b => `
+      <tr>
+        <td>${b.bloId}</td><td>${b.bloName}</td><td>${b.acName}</td><td>${b.boothNo}</td>
+        <td>${b.totalElectors.toLocaleString()}</td><td>${b.cumulative.toLocaleString()}</td>
+        <td>${pctBadge(b.overallPct)}</td>
+        <td>${b.submittedToday ? '✅' : '—'}</td>
+      </tr>
+    `).join('');
+}
+
+document.getElementById('searchBox').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  renderTable(allBlos.filter(b => b.bloName.toLowerCase().includes(q) || String(b.boothNo).includes(q)));
+});
+
+async function load() {
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    render(data);
+  } catch (e) {
+    document.getElementById('cards').innerHTML = '<div class="loading">Could not load data. Check connection and try refreshing.</div>';
+  }
+}
+
+load();
+setInterval(load, 5 * 60 * 1000); // auto-refresh every 5 minutes
+</script>
+</body>
+</html>
